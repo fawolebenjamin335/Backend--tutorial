@@ -1,0 +1,212 @@
+import { loginUserSchema, signupUserSchema } from '../validators/user.js';
+import { comparePassword, hashPassword } from '../utils/bcrypt.js';
+import { aToken } from '../tokens/jwt.js';
+import { findUserByEmail, signUpUser } from './users.services.js';
+import { generateUniqueNumber } from '../utils/accountNumber.js';
+import { BankAccount } from '../models/bankaccount.js';
+import { createAccount } from '../accounts/accounts.services.js';
+import { generateOTPnumber } from '../utils/otp.register.js';
+import { sendOTPEmail } from '../utils/users.OTP.js';
+import { User } from '../models/user.js';
+
+
+
+export const signUpUserController = async (req, res) => {
+    try {
+
+        // first thing is to validate the users's input- using joi 
+          const {error, value } = signupUserSchema.validate(req.body);
+          
+          // throw an error if a field is missing
+          if(error) return res.status(400).json({error: error.message});
+          
+          // destructure user data into variable "value"
+          let {  firstName, lastName, email, SSN, password, accountType, OTP, phoneNumber} = value;
+          
+          // check if user already exists with the email
+          let user = await findUserByEmail({email: value.email});
+
+          // throw an error if a user was found with that email
+          if(user) return res.status(400).json({error: `Account already exists`});
+          
+
+          
+          // hash, or encrypt user's password before storing into DB
+          value.password = await hashPassword(password);
+
+          const TheOTP = await generateOTPnumber(4);
+         
+
+        await sendOTPEmail(
+          email,
+          " Your Verification Code",
+          `Your OTP is: ${TheOTP}`
+          );
+
+
+    
+    await signUpUser({...value, OTP: TheOTP, verified: false});
+    
+        //   create an account for the user if no error
+        // let accountNumber = await generateUniqueNumber(10, BankAccount);
+
+        
+        
+        
+
+
+        return res.status(201).json({message: `OTP sent to ${email}. Please verify your email in the VERIFY endpoint to complete registration.`});
+
+
+
+    // return   res.status(201).json({message: `user registered sucessfully`, user: user.toJSON(), bank: bankAccount.toJSON()});
+        
+    } catch (error) {
+
+        console.log(`Error sending otp. Try again`, error);
+
+        return res.status(500).json({error: `Internal Server Error`});
+        
+    }
+};
+
+export const SIgnUpVerify = async (req, res) => {
+    try {
+        const { email, OTP } = req.user;
+
+    const user = await User.findOne({ where: { email }});
+
+    if (!user) return res.status(404).json({ error: "User not found" });
+
+    if (parseFloat(user.OTP) !== parseFloat(OTP)) {
+      return res.status(400).json({ error: "Invalid OTP" });
+    }
+ 
+
+    
+
+    const bankAccount = await createAccount({userID: user.id, accountNumber, accountType});
+
+    let accountNumber = await generateUniqueNumber(10, BankAccount);
+
+    await createAccount({userID : user.id, accountNumber, accountType: user.accountType});
+
+
+
+
+    user.verified = true;
+    user.OTP = null;
+    await user.save();
+
+    return res.json({ message: "OTP verified successfully" });
+        
+    } catch (error) {
+        console.log(`Error verifying otp. Try again`, error);
+
+        return res.status(500).json({error: `Internal Server Error`});
+        
+    }
+
+
+}
+
+
+
+export const loginUserController = async (req, res) => {
+    try {
+
+        // get data from frontend
+        const {error, value} = loginUserSchema.validate(req.body);
+  
+        // validate user's data manually
+        if(error) return res.status(400).json({error: error.message});
+
+        const {email, password} = value;
+  
+        // check if user exists
+        const userExists = await findUserByEmail({email});
+  
+        // throw an error if user is not found
+        if(!userExists) return res.status(404).json({error: "User not found. Kindly create an account to login"});
+  
+        // check user's password
+        const isMatch = await comparePassword(password, userExists.password);
+  
+        // throw an error if there's no match
+        if(!isMatch) return res.status(400).json({error: "Inavlid Credentials"});
+        const id = userExists.id;
+        const role = userExists.role;
+  
+        const accessToken = aToken({id, role});
+  
+        // login upon successful validation
+        return res.status(200).json({message: "User logged in successfully!", accessToken});
+        
+    } catch (error) {
+
+        console.log("Error logging in user", error);
+
+        return res.status(500).json({error: `Internal Server Error`});
+        
+    }
+    
+};
+
+export const getUserController = async (req, res) => {
+    try {
+
+       const loggedInUser = req.user;
+        
+        console.log(loggedInUser)
+        // grab user id from the url
+        const id = loggedInUser.id;
+
+        // check if user exists with the provided id
+        const user = await findUserByEmail({id});
+
+        // throw an error if user isn't found
+        if(!user) return res.status(404).json({error: `no user found with id: ${id} `});
+
+        // return the found user
+        return res.status(200).json({user});
+
+  // if no id was sent in the url, return all users
+  return res.status(200).json({users});
+        
+    } catch (error) {
+
+        console.log("Error getting users", error);
+
+        return res.status(500).json({error: "Internal Server Error"});
+        
+    }
+};
+
+export const editUserDetailsController = async (req, res) => {
+    try {
+
+        // extract id from query params
+        const id = req.params.id;
+  
+        // check if user with id exists
+        const userExists = users.find((user) => user.id === id);
+  
+        // return an error if user doesnt exist
+        if(!userExists) return res.status(404).json({error: `user not found with id ${id}`});
+  
+        // edit user attributes if no error is found
+        Object.assign(userExists, req.body);
+  
+        return res.json({message: "User Updated Successfully", users});
+        
+    } catch (error) {
+
+        console.log("Error Editting user details", error);
+
+        return res.status(500).json({error: "Internal Server Error"});
+        
+    }
+    
+};
+
+
