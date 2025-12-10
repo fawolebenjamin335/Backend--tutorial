@@ -8,7 +8,7 @@ export const signupUserSchema = joi.object({
     accountType: joi.string().required(),
     password: joi.string().required().min(8).max(10),
     phoneNumber: joi.string().required(),
-    OTP: joi.string().required()
+    OTP: joi.string()
 });
 
 export const loginUserSchema = joi.object({
