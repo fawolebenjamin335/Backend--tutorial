@@ -1,5 +1,4 @@
 import dotenv from 'dotenv';
-import { user } from 'pg/lib/defaults';
 
 dotenv.config();
 

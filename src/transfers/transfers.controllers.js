@@ -3,7 +3,7 @@ import { deposit, findAccount, recordTransaction } from "../deposit/deposit.serv
 import { Transaction } from "../models/transaction.js";
 import { transferValidatorSchema } from "../validators/transfers.js";
 import { comparePassword } from "../utils/bcrypt.js";
-import { currencyConverter } from "../utils/currency.converter.js";
+
 
 
 export const createTransfercontroller = async (req, res) => {
@@ -48,7 +48,7 @@ if (!isPinValid) return res.status(400).json({error: `Invalid PIN, Kindly rechec
 if (parseFloat(SenderAccount.balance) < parseFloat(amount) ||parseFloat(SenderAccount.balance) < 0) return res.status(400).json({error: `Insufficient balance to perform transfer`});
 
 if (sourceAccount.currency !== destinationAccount.currency) {
-    await currencyConverter(sourceAccount.currency, destinationAccount.currency, amount);
+    await (sourceAccount.currency, destinationAccount.currency, amount);
     if (!amount) return res.status(500).json({error: `Currency conversion failed, Kindly try again later`});
 }
  
