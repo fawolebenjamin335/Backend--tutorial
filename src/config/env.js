@@ -5,7 +5,7 @@ dotenv.config();
 export const config = {
     port: process.env.PORT,
     access: process.env.ACCESS_SECRET,
-    user: process.env.EMAIL,
+    users: process.env.EMAIL,
     pass: process.env.EMAIL_PASSWORD,
     databaseURL: process.env.DATABASE_URL,
     nodeENV: process.env.NODE_ENV,

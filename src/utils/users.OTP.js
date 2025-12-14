@@ -5,17 +5,21 @@ export const sendOTPEmail = async (to, subject, message) => {
     
   const transporter = nodemailer.createTransport({
 
-    service: "gmail",          
+    service: "gmail", 
+    auth: {
+  user: config.users,
+  pass: config.pass,
+}         
     
   });
 
   const mailOptions = {
-    from: config.user,
+    from: config.users,
     to,
     subject,
     text: message,
   };
 
-  return transporter.sendOTPEmail(mailOptions);
+ return transporter.sendMail(mailOptions);
 }
 
