@@ -45,7 +45,7 @@ const isPinValid = await comparePassword(pin, SenderAccount.pin);
 
 if (!isPinValid) return res.status(400).json({error: `Invalid PIN, Kindly recheck and try again`});
 
-if (parseFloat(SenderAccount.balance) < parseFloat(amount) ||parseFloat(SenderAccount.balance) < 0) return res.status(400).json({error: `Insufficient balance to perform transfer`});
+if (parseFloat(SenderAccount.balance) < parseFloat(amount) ||parseFloat(SenderAccount.balance) < 0)  return res.status(400).json({error: `Insufficient balance to perform transfer`});
 
 if (sourceAccount.currency !== destinationAccount.currency) {
     await (sourceAccount.currency, destinationAccount.currency, amount);
