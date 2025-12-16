@@ -34,13 +34,13 @@ export const signUpUserController = async (req, res) => {
           // hash, or encrypt user's password before storing into DB
           value.password = await hashPassword(password);
 
-          const TheOTP = await generateOTPnumber(4);
+          const TheOTP = await generateOTPnumber(4, email);
          
 
         await sendOTPEmail(
           email,
           " Your Verification Code",
-          `Your OTP is: ${TheOTP}`
+          `Your OTP is: ${TheOTP}` ,
           );
 
 
@@ -55,7 +55,7 @@ export const signUpUserController = async (req, res) => {
         
 
 
-        return res.status(201).json({message: `OTP sent to ${email}. Please verify your email in the VERIFY endpoint to complete registration.`});
+return res.status(201).json({message: `OTP sent to ${email}. Please verify your email in the VERIFY endpoint to complete registration.`});
 
 
 
@@ -72,30 +72,32 @@ export const signUpUserController = async (req, res) => {
 
 export const SIgnUpVerify = async (req, res) => {
     try {
-        const { email, OTP } = req.user;
+        let { accountNumber, email, OTP, accountType } = req.body;
+
+
 
     const user = await User.findOne({ where: { email }});
+
+    // console.log(`the user`, user);
 
     if (!user) return res.status(404).json({ error: "User not found" });
 
     if (parseFloat(user.OTP) !== parseFloat(OTP)) {
       return res.status(400).json({ error: "Invalid OTP" });
     }
- 
+      accountNumber = await generateUniqueNumber(10, BankAccount);
 
-    
+      const type = accountType || "savings";
 
-    const bankAccount = await createAccount({userID: user.id, accountNumber, accountType});
+      const bankAccount = await createAccount({userID: user.id, accountNumber, accountType: type});
 
-    let accountNumber = await generateUniqueNumber(10, BankAccount);
-
-    await createAccount({userID : user.id, accountNumber, accountType: user.accountType});
+    // await createAccount({userID : user.id, accountNumber, accountType: user.accountType});
 
 
 
 
     user.verified = true;
-    user.OTP = null;
+    //user.OTP = null;
     await user.save();
 
     return res.json({ message: "OTP verified successfully" });

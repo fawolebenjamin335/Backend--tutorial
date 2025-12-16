@@ -31,7 +31,7 @@ User.init(
       },
     OTP: {
       type: DataTypes.STRING,
-      allowNull: false,
+      allowNull: true,
       defaultValue: "OTP"
     }
   },
